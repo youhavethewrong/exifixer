@@ -50,4 +50,5 @@
   [& args]
   (when (not= 1 (count args))
     (println "Usage: exifixer [directory]\ndirectory\tthe directory of images you want to set timestamps on"))
-  (fix-timestamps (first args)))
+  (doall
+   (fix-timestamps (first args))))
