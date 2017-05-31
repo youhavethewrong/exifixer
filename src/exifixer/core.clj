@@ -25,7 +25,7 @@
     (when-not (= (.lastModified f) l)
       {:file f
        :timestamp  (do
-                     (println (str (.getName f) " has timestamp " (.lastModified f) " but Exif has timestamp " l "."))
+                     (println (str "Changing " (.getName f) " from timestamp " (.lastModified f) " to Exif timestamp " l "."))
                      l)})))
 
 (defn find-images-with-exif
@@ -48,7 +48,7 @@
 
 (defn -main
   [& args]
-  (when (not= 1 (count args))
-    (println "Usage: exifixer [directory]\ndirectory\tthe directory of images you want to set timestamps on"))
-  (doall
-   (fix-timestamps (first args))))
+  (if-not (= 1 (count args))
+    (println "Usage: exifixer [directory]\ndirectory\tthe directory of images you want to set timestamps on")
+    (doall
+     (fix-timestamps (first args)))))
