@@ -1,6 +1,6 @@
 (ns exifixer.core
   (:require [clojure.java.io :as io])
-  (:import [com.drew.imaging ImageMetadataReader]
+  (:import [com.drew.imaging ImageMetadataReader ImageProcessingException]
            [com.drew.metadata.exif ExifSubIFDDirectory])
   (:gen-class))
 
@@ -21,12 +21,11 @@
 
 (defn build-data
   [f]
-  (when-let [l (pull-date f)]
-    (when-not (= (.lastModified f) l)
-      {:file f
-       :timestamp  (do
-                     (println (str "Changing " (.getName f) " from timestamp " (.lastModified f) " to Exif timestamp " l "."))
-                     l)})))
+  (try
+    (when-let [l (pull-date f)]
+      (when-not (= (.lastModified f) l)
+        {:file f :timestamp l}))
+    (catch ImageProcessingException ex (println (str "Ignoring " (.getName f) " because it's not a processable image.")))))
 
 (defn find-images-with-exif
   [directory]
@@ -38,17 +37,19 @@
 
 (defn set-last-modified
   [{:keys [timestamp file]}]
-  (.setLastModified file timestamp))
+  (when file
+          (println (str "Changing " (.getName file) " from timestamp " (.lastModified file)
+                        " to Exif timestamp " timestamp "."))
+          (.setLastModified file timestamp)))
 
 (defn fix-timestamps
   [directory]
-  (map
-   set-last-modified
-   (find-images-with-exif directory)))
+  (doseq [image (find-images-with-exif directory)]
+    (set-last-modified image)))
 
 (defn -main
   [& args]
-  (if-not (= 1 (count args))
+  (if (or (= (count args) 0)
+          (not (.isDirectory (io/file (first args)))))
     (println "Usage: exifixer [directory]\ndirectory\tthe directory of images you want to set timestamps on")
-    (doall
-     (fix-timestamps (first args)))))
+    (fix-timestamps (first args))))
